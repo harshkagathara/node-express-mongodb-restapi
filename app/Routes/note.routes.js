@@ -1,8 +1,62 @@
+const Note = require('../Models/note.model.js');
+
 module.exports = (app) => {
-	const notes = require('../Controllers/note.controller.js');
-	app.post('/notes', notes.create);
-	app.get('/notes', notes.findAll);
-	app.get('/notes/:noteId', notes.findOne);
-	app.put('/notes/:noteId', notes.update);
-	app.delete('/notes/:noteId', notes.delete);
+	app.post('/notes', (req, res) => {
+	if(!req.body.content) {
+		return res.status(400).send({
+			message: "Note content can not be empty"
+		});
+	}
+	const note = new Note(req.body);
+	note.save().then(data => {
+		res.json(data);
+	}).catch(err => {
+		res.send(err);
+	});
+});
+	app.get('/notes', (req, res) => {
+		Note.find().then(notes => {
+			res.send(notes);
+		}).catch(err => {
+			res.send(err);
+		});
+	});
+
+	app.get('/notes/:noteId', (req, res) => {
+	Note.findById(req.params.noteId).then(note => {
+		res.send(note);
+	}).catch(err => {
+		res.send({
+			message: "Not Found This id :-" + req.params.noteId
+		});
+	});
+});
+	app.put('/notes/:noteId', (req, res) => {
+		Note.findById(req.params.noteId).then(note => {
+			Note.update({
+				_id: req.params.noteId
+			}, {
+				content: req.body.content,
+				title: req.body.title
+			}, (err, data) => {
+				if(err) throw err;
+				Note.findById(req.params.noteId).then(reslut => {
+					res.json(reslut);
+				});
+			})
+		}).catch(err => {
+			res.send({
+				message: "Note not found with id:-" + req.params.noteId
+			});
+		});
+	});
+	app.delete('/notes/:noteId', (req, res) => {
+		Note.findByIdAndRemove(req.params.noteId).then(note => {
+			res.send({
+				message: "Note deleted successfully!"
+			});
+		}).catch(err => {
+			res.json("Note not found with id:-" + req.params.noteId);
+		});
+	});
 }
